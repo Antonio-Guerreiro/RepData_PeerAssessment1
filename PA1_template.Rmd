@@ -1,25 +1,170 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
+title: 'Reproducible Research: Peer Assessment 1'
+author: "Antonio Guerreiro"
+date: "29/07/2017"
 output: 
-  html_document:
-    keep_md: true
+  html_document: 
+    keep_md: yes
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 ## Loading and preprocessing the data
-
-
+```{r}
+activity <- read.csv("activity.csv")
+activity$day_interval <- activity$interval %% 100
+nona_activity = na.omit(activity)
+```
 
 ## What is mean total number of steps taken per day?
 
+```{r}
+aggregate(nona_activity$steps, list(nona_activity$date), sum)
+aggregate(nona_activity$steps, list(nona_activity$date), mean)
+aggregate(nona_activity$steps, list(nona_activity$date), median)
+hist(aggregate(nona_activity$steps, list(nona_activity$date), sum)$x)
+```
 
+Total mean and median
+
+mean
+
+```{r}
+mean(nona_activity$steps)
+```
+
+median
+
+```{r}
+median(nona_activity$steps)
+```
 
 ## What is the average daily activity pattern?
 
+```{r}
+nona_activity$day_interval <- nona_activity$interval %% 100
+plot(aggregate(nona_activity$steps, list(nona_activity$day_interval), mean)$Group.1, aggregate(nona_activity$steps, list(nona_activity$day_interval), mean)$x, type = "l")
+```
+
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r}
+interval_means <-aggregate(nona_activity$steps, list(nona_activity$day_interval), mean)
+interval_means
+interval_means[interval_means$x == max(interval_means$x),]
+```
 
 
 ## Imputing missing values
 
+Total number of rows with  NAs
 
+```{r}
+NROW(which (is.na(activity)))
+nrow(activity[is.na(activity$steps),])
+```
+
+The strategy is to use the the mean for that 5-minute interval.
+
+Create a new dataset that is equal to the original dataset but with the missing data filled in.
+
+```{r}
+for (n in 1:nrow(activity)) {
+  if (is.na(activity$steps[n])) {
+    new_value <- interval_means[interval_means$Group.1 == activity$day_interval[n], ]$x
+    activity$steps[n] <- new_value
+  }
+}
+
+head(activity)
+```
+
+Total number of rows with  NAs
+
+```{r}
+NROW(which (is.na(activity)))
+nrow(activity[is.na(activity$steps),])
+```
+
+```{r}
+aggregate(activity$steps, list(activity$date), mean)
+aggregate(activity$steps, list(activity$date), median)
+hist(aggregate(activity$steps, list(activity$date), sum)$x)
+```
+
+Do these values differ from the estimates from the first part of the assignment? yes
+
+What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+
+total number of steps taken each day
+
+```{r}
+aggregate(activity$steps, list(activity$date), sum)
+```
+
+
+```{r}
+aggregate(activity$steps, list(activity$date), sum)
+aggregate(activity$steps, list(activity$date), mean)
+aggregate(activity$steps, list(activity$date), median)
+hist(aggregate(activity$steps, list(activity$date), sum)$x)
+```
+
+Total mean and median
+
+mean
+
+```{r}
+mean(activity$steps)
+```
+
+median
+
+```{r}
+median(activity$steps)
+```
+
+What is the impact of imputing missing data on the estimates of the total daily number of steps?
+No impact for overallmean and median.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+activity$day <- weekdays(as.Date(activity$date),abbreviate = FALSE)
+
+for (n in 1:nrow(activity)) {
+  if (activity$day[n] == "Samedi" || activity$day[n] == "Dimanche") {
+    activity$daytype[n] <- "weekend"
+  } else {
+    activity$daytype[n] <- "weekday"
+  }
+}
+
+head(activity)
+```
+
+panel plot
+
+```{r}
+weekend_activity <- activity[activity$daytype == "weekend",]
+weekday_activity <- activity[activity$daytype == "weekday",]
+
+head(weekend_activity)
+head(weekday_activity)
+```
+
+
+```{r}
+
+par(mfrow=c(2,1))
+plot(aggregate(weekend_activity$steps, list(weekend_activity$interval), mean)$Group.1, aggregate(weekend_activity$steps, list(weekend_activity$interval), mean)$x, type = "l")
+
+plot(aggregate(weekday_activity$steps, list(weekday_activity$interval), mean)$Group.1, aggregate(weekday_activity$steps, list(weekday_activity$interval), mean)$x, type = "l")
+
+
+```
+
+
